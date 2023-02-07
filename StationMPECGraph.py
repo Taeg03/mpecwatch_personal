@@ -32,13 +32,11 @@ TABLE XXX (observatory code):
 """
 
 import sqlite3, plotly.express as px, pandas as pd, datetime, numpy as np
-import time, calendar, re
+import time
 from datetime import date
-from collections import defaultdict
 
-mpecconn = sqlite3.connect("C:\\Users\\taega\\OneDrive\\Documents\\mpec_files\\mpecwatch_v3.db")
+mpecconn = sqlite3.connect("C:\\Users\\taega\\Documents\\mpec_files\\mpecwatch_v3.db")
 cursor = mpecconn.cursor()
-currentYear = datetime.datetime.now().year
 
 #prints the contents of a table w/ output limit
 def printTableContent(table):
@@ -61,8 +59,8 @@ def calcObs():
         for station in mpec[3].split(', '):
             if station not in d:
                 d[station] = {}
-                d[station]['mpec_followup'] = {}
-                d[station]['mpec_1st_followup'] = {}
+                d[station]['Followup'] = {}
+                d[station]['FirstFollowup'] = {}
                 d[station]['Discovery'] = {}
                 d[station]['Editorial'] = {}
                 d[station]['OrbitUpdate'] = {}
@@ -70,21 +68,26 @@ def calcObs():
                 d[station]['ListUpdate'] = {}
                 d[station]['Retraction'] = {}
                 d[station]['Other'] = {}
+                d[station]['MPECs'] = set()
+            
+            #listing all the MPECs from one station: USING TITLE (from MPEC table)
+            d[station]['MPECs'].add(mpec[0] + "\t" + mpec[1])
+
             #MPECType = 'Discovery' and DiscStation != '{}'
             if mpec[6] == 'Discovery' and station != mpec[4]:
                 try:
                     #attempts to increment dict value by 1
-                    d[station]['mpec_followup'][year] = d[station]['mpec_followup'].get(year,0)+1
+                    d[station]['Followup'][year] = d[station]['Followup'].get(year,0)+1
                 except:
                     #creates dict key and adds 1
-                    d[station]['mpec_followup'][year] = 1
+                    d[station]['Followup'][year] = 1
 
             #MPECType = 'Discovery' and DiscStation != '{}' and "disc_station, station" in stations
             if mpec[6] == 'Discovery' and station not in mpec[4] and mpec[4] + ', ' + station in mpec[3]:
                 try:
-                    d[station]['mpec_1st_followup'][year] = d[station]['mpec_1st_followup'].get(year,0)+1
+                    d[station]['FirstFollowup'][year] = d[station]['FirstFollowup'].get(year,0)+1
                 except:
-                    d[station]['mpec_1st_followup'][year] = 1
+                    d[station]['FirstFollowup'][year] = 1
 
             #if station = discovery station
             if station == mpec[4]:
@@ -101,19 +104,20 @@ def calcObs():
                     except:
                         #creates dict key and adds 1
                         d[station][mpecType][year] = 1
-            
+    
 def main():
     calcObs()
     includeFirstFU = True
     for station_name in tableNames():
     #for station_name in range(1):
-        FUcount = 0
-        F_FUcount = 0
-        totalMPEC = 0
         df = pd.DataFrame({"Year": [], "MPECType": [], "#MPECs": []})
         station = station_name[0]
-        #station = 'station_046'
-        page = "C:\\Users\\taega\\OneDrive\\Documents\\mpec_files\\WEB_Stations\\WEB_" + str(station) + ".html"
+        #station = 'station_010'
+        ''' Prints the MPECs for each station
+        for MPEC in d[station[-3::]]['MPECs']:
+            print(MPEC)
+        '''
+        page = "C:\\Users\\taega\\Documents\\mpec_files\\WEB_Stations\\WEB_" + str(station) + ".html"
         o = """
         <div class="jumbotron text-center">
           <h1>{}</h1>
@@ -126,7 +130,7 @@ def main():
               <h3>Graph 1</h3>
               <p>
                   Testing
-                  <iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="C:\\Users\\taega\\OneDrive\\Documents\\mpec_files\\WEB_Stations\\Graphs\\{}.html" height="525" width="100%"></iframe>
+                  <iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="C:\\Users\\taega\\Documents\\mpec_files\\WEB_Stations\\Graphs\\{}.html" height="525" width="100%"></iframe>
               </p>
             </div>
             <table>
@@ -141,22 +145,20 @@ def main():
                     <th>Retraction</th>
                     <th>Other</th>
                     <th>Follow-Up</th>
-                    <th>1st follow-up</th>
+                    <th>First Follow-Up</th>
                 </tr>
             </table>
         """.format(station.capitalize(), station)
         
         for year in list(np.arange(1993, datetime.datetime.now().year+1, 1))[::-1]:
-            obs_types = ["Editorial", "Discovery", "OrbitUpdate", "DOU", "ListUpdate", "Retraction", "Other", "mpec_followup", "mpec_1st_followup"]
-            def __call(fn):
-                return fn()
-            mpec_counts = list(map(__call, [lambda mpecType=x: d[station[8::]][mpecType][year] if year in d[station[8::]][mpecType].keys() else 0 for x in obs_types]))
+            obs_types = ["Editorial", "Discovery", "OrbitUpdate", "DOU", "ListUpdate", "Retraction", "Other", "Followup", "FirstFollowup"]
+            mpec_counts = list(map(lambda func: func(), [lambda mpecType=x: d[station[8::]][mpecType][year] if year in d[station[8::]][mpecType].keys() else 0 for x in obs_types]))
             if includeFirstFU:
                 mpec_counts[7] -= mpec_counts[8]
             else:
                 mpec_counts[8] = 0
             
-            df = pd.concat([df, pd.DataFrame({"Year": [year, year, year, year, year, year, year, year, year], "MPECType": ["Editorial", "Discovery", "OrbitUpdate", "DOU", "ListUpdate", "Retraction", "Other", "mpec_followup", "mpec_1st_followup"], "#MPECs": mpec_counts})])
+            df = pd.concat([df, pd.DataFrame({"Year": [year, year, year, year, year, year, year, year, year], "MPECType": ["Editorial", "Discovery", "OrbitUpdate", "DOU", "ListUpdate", "Retraction", "Other", "Followup", "FirstFollowup"], "#MPECs": mpec_counts})])
 
             o += """
               <tr>
@@ -173,31 +175,22 @@ def main():
                 <td>%i</td>
               </tr>
             """ % (year, sum(mpec_counts), mpec_counts[0], mpec_counts[1], mpec_counts[2], mpec_counts[3], mpec_counts[4], mpec_counts[5], mpec_counts[6], mpec_counts[7], mpec_counts[8])
-            
-            '''totalMPEC += sum(mpec_counts)
-            FUcount += mpec_counts[7]
-            F_FUcount += mpec_counts[8]'''
 
         fig = px.bar(df, x="Year", y="#MPECs", color="MPECType", title= station.capitalize()+" | Number and type of MPECs by year")
-        fig.write_html("C:\\Users\\taega\\OneDrive\\Documents\\mpec_files\\WEB_Stations\\Graphs\\{}.html".format(station))
-        
+        fig.write_html("C:\\Users\\taega\\Documents\\mpec_files\\WEB_Stations\\Graphs\\{}.html".format(station))
         o += """    
           </div>
         </div>
         """
-        '''print("Total: ", totalMPEC)
-        print("FUCount: ", FUcount)
-        print("1stFUCount: ", F_FUcount)'''
         print(station)
         with open(page, 'w') as f:
             f.write(o)
 
-
-start = time.perf_counter()
+'''start = time.perf_counter()
 main()   
 finish = time.perf_counter()
-print('Time: ', finish-start)
+print('Time: ', finish-start)'''
 
-#main()
+main()
 mpecconn.close()
 print('finished')
