@@ -31,8 +31,7 @@ TABLE XXX (observatory code):
     8 Discovery    INTEGER        Corresponding to discovery asterisk
 """
 
-import sqlite3, plotly.express as px, pandas as pd, datetime, numpy as np
-import time
+import sqlite3, pandas as pd, plotly.express as px, datetime, numpy as np
 from datetime import date
 
 mpecconn = sqlite3.connect("C:\\Users\\taega\\Documents\\mpec_files\\mpecwatch_v3.db")
@@ -68,10 +67,7 @@ def calcObs():
                 d[station]['ListUpdate'] = {}
                 d[station]['Retraction'] = {}
                 d[station]['Other'] = {}
-                d[station]['MPECs'] = set()
-            
-            #listing all the MPECs from one station: USING TITLE (from MPEC table)
-            d[station]['MPECs'].add(mpec[0] + "\t" + mpec[1])
+                d[station]['MPECs'] = []
 
             #MPECType = 'Discovery' and DiscStation != '{}'
             if mpec[6] == 'Discovery' and station != mpec[4]:
@@ -104,21 +100,47 @@ def calcObs():
                     except:
                         #creates dict key and adds 1
                         d[station][mpecType][year] = 1
+
+            #listing all the MPECs from one station: USING TITLE (from MPEC table)
+            temp = []
+            name = mpec[0] + "\t" + mpec[1]
+            if name not in d[station]['MPECs']: #prevents duplication of the same MPEC object
+                temp.append(name) #
+                temp.append(date.fromtimestamp(mpec[2])) #time: date and time
+                temp.append("DiscStation") #first or fu station?
+                                            #check mark
+                temp.append("DiscStation") #objects involved
+                temp.append("https://www.minorplanetcenter.net/mpec/{}/{}.html".format(station, mpec[0][-3::])) #does the url contain the station and then the MPECID?
+                                                                                                                #MPECID to URL:
+                                                                                                                #proc.py
+                                                                                                                #A: rollover to 1-0
+                d[station]['MPECs'].append(temp)
     
 def main():
     calcObs()
     includeFirstFU = True
-    for station_name in tableNames():
-    #for station_name in range(1):
+    #for station_name in tableNames():
+    for station_name in range(1):
         df = pd.DataFrame({"Year": [], "MPECType": [], "#MPECs": []})
-        station = station_name[0]
-        #station = 'station_010'
+        #station = station_name[0]
+        station = 'station_010'
         ''' Prints the MPECs for each station
         for MPEC in d[station[-3::]]['MPECs']:
             print(MPEC)
         '''
         page = "C:\\Users\\taega\\Documents\\mpec_files\\WEB_Stations\\WEB_" + str(station) + ".html"
         o = """
+<!doctype html>
+<html lang="en">
+    <head>    
+        <script>
+        $(document).ready(function () {
+            $('#dtBasicExample').DataTable();
+            $('.dataTables_length').addClass('bs-select');
+        });
+        </script>
+    </head>
+    <body>
         <div class="jumbotron text-center">
           <h1>{}</h1>
           <p>Graphs supported by Plotly</p>
@@ -176,18 +198,54 @@ def main():
               </tr>
             """ % (year, sum(mpec_counts), mpec_counts[0], mpec_counts[1], mpec_counts[2], mpec_counts[3], mpec_counts[4], mpec_counts[5], mpec_counts[6], mpec_counts[7], mpec_counts[8])
 
+        o += """
+            <table id="dtBasicExample" class="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
+                <thead>
+                    <tr>
+                        <th class="th-sm">Name
+
+                        </th>
+                        <th class="th-sm">Date/Time
+
+                        </th>
+                        <th class="th-sm">DiscStation or FirstConf
+
+                        </th>
+                        <th class="th-sm">Objects
+
+                        </th>
+                        <th class="th-sm">URL
+
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+        """
+        for i in d[station]['MPECs']:
+            o += """
+                    <tr>
+                        <td>%s</td>
+                        <td>%s</td>
+                        <td>%s</td>
+                        <td>%s</td>
+                        <td>%s</td>
+                    </tr>
+            """.format(i[0],i[1],i[2],i[3],i[4])
+        
         fig = px.bar(df, x="Year", y="#MPECs", color="MPECType", title= station.capitalize()+" | Number and type of MPECs by year")
         fig.write_html("C:\\Users\\taega\\Documents\\mpec_files\\WEB_Stations\\Graphs\\{}.html".format(station))
         o += """    
-          </div>
+                </tbody>
+            </div>
         </div>
-        """
+    </body>
+</html>"""
         print(station)
         with open(page, 'w') as f:
             f.write(o)
 
 '''start = time.perf_counter()
-main()   
+main()   c 
 finish = time.perf_counter()
 print('Time: ', finish-start)'''
 
