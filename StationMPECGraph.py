@@ -201,7 +201,7 @@ def main():
                   <iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="C:\\Users\\taega\\Documents\\mpec_files\\WEB_Stations\\Graphs\\{}.html" height="525" width="100%"></iframe>
               </p>
             </div>
-            <table class="table table-striped">
+            <table class="table table-striped table-sm">
                 <tr>
                     <th>Year</th>
                     <th>Total MPECs</th>
