@@ -171,7 +171,7 @@ def main():
     for station_name in range(1):
         df = pd.DataFrame({"Year": [], "MPECType": [], "#MPECs": []})
         #station = station_name[0]
-        station = 'station_010'
+        station = 'station_J95'
         #print(mpec_data[station[-3::]]['MPECs'])
         ''' Prints the MPECs for each station
         for MPEC in mpec_data[station[-3::]]['MPECs']:
@@ -201,7 +201,7 @@ def main():
                   <iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="C:\\Users\\taega\\Documents\\mpec_files\\WEB_Stations\\Graphs\\{}.html" height="525" width="100%"></iframe>
               </p>
             </div>
-            <table>
+            <table class="table table-striped">
                 <tr>
                     <th>Year</th>
                     <th>Total MPECs</th>
@@ -246,16 +246,12 @@ def main():
         o += """
             </table>
         </div>
-        <div class="toolbar">
-            <button id="load" class="btn btn-secondary">Load 10000 Rows</button>
-            <button id="append" class="btn btn-secondary">Append 10000 Rows</button>
-            Total rows: <span id="total"></span>
-        </div>
+        <div class="container">
             <table id="table" 
                 class="table table-striped table-bordered table-sm"
-                data-toolbar=".toolbar"
-                data-virtual-scroll="true"
-                data-show-columns="true">
+                data-toggle="table"
+                data-height="460"
+                data-pagination="true">
                 <thead>
                     <tr>
                         <th class="th-sm" data-field="name">Name
@@ -297,47 +293,10 @@ def main():
         o += """    
                 </tbody>
             </table>
-            <script>
-                var $table = $('#table')
-                var total = 0
-
-                function getData(number, isAppend) {
-                    if (!isAppend) {
-                    total = 0
-                    }
-                    var data = []
-                    for (var i = total; i < total + number; i++) {
-                    data.push({
-                        'name': i,
-                        'date': i,
-                        'ds': i,
-                        'fs': i,
-                        'obj': i,
-                        'url': i
-                    })
-                    }
-                    if (isAppend) {
-                    total += number
-                    } else {
-                    total = number
-                    }
-                    $('#total').text(total)
-                    return data
-                }
-
-                $(function() {
-                    $table.bootstrapTable({data: getData(20)})
-
-                    $('#load').click(function () {
-                    $table.bootstrapTable('load', getData(10000))
-                    })
-
-                    $('#append').click(function () {
-                    $table.bootstrapTable('append', getData(10000, true))
-                    })
-                })
-            </script>
-        <script src="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+            <script src="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.js"></script>
+        </div>
     </body>
 </html>"""
         print(station)
