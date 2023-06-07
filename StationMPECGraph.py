@@ -34,7 +34,7 @@ TABLE station_XXX (observatory code):
 import sqlite3, pandas as pd, plotly.express as px, datetime, numpy as np, copy
 from datetime import date
 
-mpecconn = sqlite3.connect("C:\\Users\\taega\\Documents\\mpec_files\\mpecwatch_v3.db")
+mpecconn = sqlite3.connect("..\\mpec_files\\mpecwatch_v3.db")
 cursor = mpecconn.cursor()
 
 #prints the contents of a table w/ output limit

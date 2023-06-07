@@ -3,7 +3,7 @@ import plotly.io as pio
 pio.renderers.default = "browser"
 #pio.renderers.default = "notebook_connected"
 
-mpecconn = sqlite3.connect("C:\\Users\\taega\\OneDrive\\Documents\\mpec_files\\mpecwatch_v3.db")
+mpecconn = sqlite3.connect("..\\mpec_files\\mpecwatch_v3.db")
 cursor = mpecconn.cursor()
 
 def printDict(someDictionary):
@@ -14,8 +14,7 @@ def tableNames():
     sql = '''SELECT name FROM sqlite_master WHERE type='table';'''
     cursor = mpecconn.execute(sql)
     results = cursor.fetchall()
-    return([['station_j95',]])
-    return(results[2:3])
+    return(results[1::])
 
 #creating and writing Pie chart to html
 def topN(someDictionary, graphTitle, station, includeNA = False):
@@ -42,14 +41,14 @@ def topN(someDictionary, graphTitle, station, includeNA = False):
     
     #printDict(topObjects)
     df = pd.DataFrame(list(topObjects.items()), columns=['Objects', 'Count'])
-    print(df)
+    #print(df)
     fig1 = px.pie(df, values='Count', names='Objects', title=station + " | " + graphTitle)
-    fig1.write_html("C:\\Users\\taega\\OneDrive\\Documents\\mpec_files\\OMF(Ind)\\"+station+"_"+graphTitle+"{}.html".format(titleNA))
+    fig1.write_html("..\\mpec_files\\OMF\\"+station+"_"+graphTitle+"{}.html".format(titleNA))
     #fig1.show()
+    print(station)
 
 N = 10 #Top limit of objects to show individually
-tables = tableNames()
-for station in tables:
+for station in tableNames():
     observers = {}
     measurers = {}
     facilities = {}
@@ -61,11 +60,11 @@ for station in tables:
         facilities[observation[4]] = facilities.get(observation[4],0)+1
     
     
-    topN(observers, "Top {} Observers".format(N), station[0])
-    topN(measurers, "Top {} Measurers".format(N), station[0])
+    topN(observers, "Top_{}_Observers".format(N), station[0])
+    topN(measurers, "Top_{}_Measurers".format(N), station[0])
     #includes NA:
     #topN(measurers, "Top {} Measurers".format(N), station[0], True)
-    topN(facilities, "Top {} Facilities".format(N), station[0])
+    topN(facilities, "Top_{}_Facilities".format(N), station[0])
     
     #includes NA
     #topN(observers, "Top {} Observers".format(N), station[0], True)
