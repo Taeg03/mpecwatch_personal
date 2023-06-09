@@ -35,7 +35,7 @@ import sqlite3, plotly.express as px, pandas as pd, datetime, numpy as np, json
 from datetime import date
 
 mpec_data=dict()
-mpecconn = sqlite3.connect("..\\mpec_files\\mpecwatch_v3.db")
+mpecconn = sqlite3.connect("../mpec_files/mpecwatch_v3.db")
 cursor = mpecconn.cursor()
 
 mpccode = "..\\mpec_files\\mpccode.json"
