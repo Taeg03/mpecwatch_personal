@@ -1,9 +1,8 @@
-import sqlite3, plotly.express as px, pandas as pd, copy
-import plotly.io as pio
-pio.renderers.default = "browser"
+import sqlite3, plotly.express as px, pandas as pd
+
 #pio.renderers.default = "notebook_connected"
 
-mpecconn = sqlite3.connect("..\\mpec_files\\mpecwatch_v3.db")
+mpecconn = sqlite3.connect("../mpec_files/mpecwatch_v3.db")
 cursor = mpecconn.cursor()
 
 def printDict(someDictionary):
@@ -43,7 +42,7 @@ def topN(someDictionary, graphTitle, station, includeNA = False):
     df = pd.DataFrame(list(topObjects.items()), columns=['Objects', 'Count'])
     #print(df)
     fig1 = px.pie(df, values='Count', names='Objects', title=station + " | " + graphTitle)
-    fig1.write_html("..\\mpec_files\\OMF\\"+station+"_"+graphTitle+"{}.html".format(titleNA))
+    fig1.write_html("../mpec_files/OMF/"+station+"_"+graphTitle+"{}.html".format(titleNA))
     #fig1.show()
     print(station)
 
