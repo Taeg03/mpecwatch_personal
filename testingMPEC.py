@@ -31,14 +31,13 @@ TABLE XXX (observatory code):
     Discovery    INTEGER        Corresponding to discovery asterisk
 """
 
-import sqlite3, plotly.express as px, pandas as pd, datetime, numpy as np, json
+import sqlite3, plotly.express as px, pandas as pd, datetime, numpy as np, json, time
 from datetime import date
 
-mpec_data=dict()
 mpecconn = sqlite3.connect("../mpec_files/mpecwatch_v3.db")
 cursor = mpecconn.cursor()
 
-mpccode = "..\\mpec_files\\mpccode.json"
+mpccode = "../mpec_files/mpccode.json"
 with open(mpccode) as mpccode:
     mpccode = json.load(mpccode)
 
@@ -72,59 +71,60 @@ def encode(num, alphabet=BASE62):
     return ''.join(arr)
 
 def calcObs():
+    d = dict()
     cursor.execute("select * from MPEC")
     for mpec in cursor.fetchall():
         year = date.fromtimestamp(mpec[2]).year
         for station in mpec[3].split(', '):
-            if station not in mpec_data:
-                mpec_data[station] = {}
-                mpec_data[station]['Discovery'] = {}
-                mpec_data[station]['Editorial'] = {}
-                mpec_data[station]['OrbitUpdate'] = {}
-                mpec_data[station]['DOU'] = {}
-                mpec_data[station]['ListUpdate'] = {}
-                mpec_data[station]['Retraction'] = {}
-                mpec_data[station]['Other'] = {}
-                mpec_data[station]['Followup'] = {}
-                mpec_data[station]['FirstFollowup'] = {}
-                mpec_data[station]['MPECs'] = []
+            if station not in d:
+                d[station] = {}
+                d[station]['Discovery'] = {}
+                d[station]['Editorial'] = {}
+                d[station]['OrbitUpdate'] = {}
+                d[station]['DOU'] = {}
+                d[station]['ListUpdate'] = {}
+                d[station]['Retraction'] = {}
+                d[station]['Other'] = {}
+                d[station]['Followup'] = {}
+                d[station]['FirstFollowup'] = {}
+                d[station]['MPECs'] = []
 
             #MPECType = 'Discovery' and DiscStation != '{}'
             if mpec[6] == 'Discovery' and station != mpec[4]:
                 try:
                     #attempts to increment dict value by 1
-                    mpec_data[station]['Followup'][year] = mpec_data[station]['Followup'].get(year,0)+1
+                    d[station]['Followup'][year] = d[station]['Followup'].get(year,0)+1
                 except:
                     #creates dict key and adds 1
-                    mpec_data[station]['Followup'][year] = 1
+                    d[station]['Followup'][year] = 1
 
             #MPECType = 'Discovery' and DiscStation != '{}' and "disc_station, station" in stations
             if mpec[6] == 'Discovery' and station not in mpec[4] and mpec[4] + ', ' + station in mpec[3]:
                 try:
-                    mpec_data[station]['FirstFollowup'][year] = mpec_data[station]['FirstFollowup'].get(year,0)+1
+                    d[station]['FirstFollowup'][year] = d[station]['FirstFollowup'].get(year,0)+1
                 except:
-                    mpec_data[station]['FirstFollowup'][year] = 1
+                    d[station]['FirstFollowup'][year] = 1
 
             #if station = discovery station
             if station == mpec[4]:
                 try:
-                    mpec_data[station]['Discovery'][year] = mpec_data[station]['Discovery'].get(year,0)+1
+                    d[station]['Discovery'][year] = d[station]['Discovery'].get(year,0)+1
                 except:
-                    mpec_data[station]['Discovery'][year] = 1
+                    d[station]['Discovery'][year] = 1
             
             for mpecType in ["Editorial", "OrbitUpdate", "DOU", "ListUpdate", "Retraction", "Other"]:
                 if mpec[6] == mpecType:
                     try:
                         #attempts to increment dict value by 1
-                        mpec_data[station][mpecType][year] = mpec_data[station][mpecType].get(year,0)+1
+                        d[station][mpecType][year] = d[station][mpecType].get(year,0)+1
                     except:
                         #creates dict key and adds 1
-                        mpec_data[station][mpecType][year] = 1
+                        d[station][mpecType][year] = 1
 
             #listing all the MPECs from one station: USING TITLE (from MPEC table)
             temp = []
             name = mpec[0] + "\t" + mpec[1]
-            if name not in mpec_data[station]['MPECs']: #prevents duplication of the same MPEC object
+            if name not in d[station]['MPECs']: #prevents duplication of the same MPEC object
                 temp.append(name) #
                 temp.append(datetime.datetime.fromtimestamp(mpec[2])) #time: date and time
                 #if station = discovery station
@@ -161,11 +161,11 @@ def calcObs():
                 url1 = "\"https://www.minorplanetcenter.net/mpec/{}/{}.html\"".format(packed_front, packed_back)
                 mpec_url = "<a href={}>Details</a>".format(url1)
                 temp.append(mpec_url)
-                mpec_data[station]['MPECs'].append((temp))
-
+                d[station]['MPECs'].append((temp))
+    return d
 
 def main():
-    calcObs()
+    mpec_data = calcObs()
     includeFirstFU = True #include first-followup in graph or just use FU
     # for station_name in tableNames():
     #     try:
@@ -177,7 +177,7 @@ def main():
         station = 'station_J95'
         df = pd.DataFrame({"Year": [], "MPECType": [], "#MPECs": []})
         #station = station_name[0]
-        page = "..\\mpec_files\\WEB_Stations\\WEB_" + str(station) + ".html"
+        page = "../mpec_files/WEB_Stations/WEB_" + str(station) + ".html"
 
         o = """
 <!doctype html>
@@ -197,25 +197,29 @@ def main():
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
     <meta name="description" content="">
     <meta name="author" content="">
-    <link rel="icon" href="..\\qCode\\favicon.ico">
+    <link rel="icon" href="../qCode/favicon.ico">
 
     <title>MPEC Watch | Station Statistics %s</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="..\\qCode\\dist\\css\\bootstrap.min.css" rel="stylesheet">
+    <link href="../qCode/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap theme -->
-    <link href="..\\qCode\\dist\\css\\bootstrap-theme.min.css" rel="stylesheet">
+    <link href="../qCode/dist/css/bootstrap-theme.min.css" rel="stylesheet">
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <link href="..qCode\\assets\\css\\ie10-viewport-bug-workaround.css" rel="stylesheet">
+    <link href="..qCode/assets/css/ie10-viewport-bug-workaround.css" rel="stylesheet">
 
     <!-- Custom styles for this template -->
-    <link href="..\\qCode\\theme.css" rel="stylesheet">
+    <link href="../qCode/theme.css" rel="stylesheet">
 
+    <!-- Table pagination -->
+    <link href="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/bootstrap-table@1.21.4/dist/bootstrap-table.min.js"></script>
+    
     <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-    <!--[if lt IE 9]><script src="..\\qCode\\assets\\js\\ie8-responsive-file-warning.js"></script><![endif]-->
-    <script src="..\\qCode\\assets\\js\\ie-emulation-modes-warning.js"></script>
-    <script src="..\\qCode\\dist\\extensions\\export\\tableExport.min.js"></script>
-        <script src="..\\qCode\\dist\\extensions\\export\\tableExport.js"></script>
+    <!--[if lt IE 9]><script src="../qCode/assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+    <script src="../qCode/assets/js/ie-emulation-modes-warning.js"></script>
+    <script src="../qCode/dist/extensions/export/tableExport.min.js"></script>
+        <script src="../qCode/dist/extensions/export/tableExport.js"></script>
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -265,10 +269,10 @@ def main():
             o += """<p><a href="https://geohack.toolforge.org/geohack.php?params={};{}">Where is this place?</a></p>""".format(mpccode[station[-3:]]['lat'], lon)
               
         o += """<p>
-                  <iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="Graphs\\{}.html" height="525" width="100%"></iframe>
-                  <iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="..\\OMF\\{}_Top_10_Observers.html" height="525" width="100%"></iframe>
-                  <iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="..\\OMF\\{}_Top_10_Measurers.html" height="525" width="100%"></iframe>
-                  <iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="..\\OMF\\{}_Top_10_Facilities.html" height="525" width="100%"></iframe>
+                  <iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="Graphs/{}.html" height="525" width="100%"></iframe>
+                  <iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="../OMF/{}_Top_10_Observers.html" height="525" width="100%"></iframe>
+                  <iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="../OMF/{}_Top_10_Measurers.html" height="525" width="100%"></iframe>
+                  <iframe id="igraph" scrolling="no" style="border:none;" seamless="seamless" src="../OMF/{}_Top_10_Facilities.html" height="525" width="100%"></iframe>
               </p>
             </div>
         <div class="container">
@@ -288,6 +292,7 @@ def main():
                 </tr>
         """.format(str(station), str(station), str(station), str(station))
         
+        summary_table = dict()
         for year in list(np.arange(1993, datetime.datetime.now().year+1, 1))[::-1]:
             obs_types = ["Editorial", "Discovery", "OrbitUpdate", "DOU", "ListUpdate", "Retraction", "Other", "Followup", "FirstFollowup"]
             mpec_counts = list(map(lambda func: func(), [lambda mpecType=x: mpec_data[station[8::]][mpecType][year] if year in mpec_data[station[8::]][mpecType].keys() else 0 for x in obs_types]))
@@ -298,6 +303,17 @@ def main():
             
             df = pd.concat([df, pd.DataFrame({"Year": [year, year, year, year, year, year, year, year, year], "MPECType": ["Editorial", "Discovery", "OrbitUpdate", "DOU", "ListUpdate", "Retraction", "Other", "Followup", "FirstFollowup"], "#MPECs": mpec_counts})])
             
+            summary_table[year] = {}
+            summary_table[year]['Total MPECs'] = {}
+            summary_table[year]['Editorial'] = {}
+            summary_table[year]['Discovery'] = {}
+            summary_table[year]['P/R/FU'] = {}
+            summary_table[year]['DOU'] = {}
+            summary_table[year]['List Update'] = {}
+            summary_table[year]['Retraction'] = {}
+            summary_table[year]['Other'] = {}
+            summary_table[year]['Follow-Up'] = {}
+            summary_table[year]['First Follow-Up'] = {}
             o += """
                 <tr>
                     <td>%i</td>
@@ -313,7 +329,18 @@ def main():
                     <td>%i</td>
                 </tr>
             """ % (year, sum(mpec_counts), mpec_counts[0], mpec_counts[1], mpec_counts[2], mpec_counts[3], mpec_counts[4], mpec_counts[5], mpec_counts[6], mpec_counts[7], mpec_counts[8])
-            
+            summary_table[year]['Total MPECs'] = sum(mpec_counts)
+            summary_table[year]['Editorial'] = int(mpec_counts[0])
+            summary_table[year]['Discovery'] = int(mpec_counts[1])
+            summary_table[year]['P/R/FU'] = int(mpec_counts[2])
+            summary_table[year]['DOU'] = int(mpec_counts[3])
+            summary_table[year]['List Update'] = int(mpec_counts[4])
+            summary_table[year]['Retraction'] = int(mpec_counts[5])
+            summary_table[year]['Other'] = int(mpec_counts[6])
+            summary_table[year]['Follow-Up'] = int(mpec_counts[7])
+            summary_table[year]['First Follow-Up'] = int(mpec_counts[8])
+        print(json.dumps(summary_table))
+
         o += """
             </table>
         </div>
@@ -361,7 +388,7 @@ def main():
 
         try:
             fig = px.bar(df, x="Year", y="#MPECs", color="MPECType", title= station[-3:] + " " + mpccode[station[-3:]]['name']+" | Number and type of MPECs by year")
-            fig.write_html("..\\mpec_files\\WEB_Stations\\Graphs\\{}.html".format(station))
+            fig.write_html("../mpec_files/WEB_Stations/Graphs/{}.html".format(station))
         except Exception as e:
             print(e)
 
@@ -389,11 +416,11 @@ def main():
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
-    <script>window.jQuery || document.write('<script src="..\\qCode\\assets\\js\\vendor\\jquery.min.js"><\/script>')</script>
-    <script src="..\\qCode\\dist\\js\\bootstrap.min.js"></script>
-    <script src="..\\qCode\\assets\\js\\docs.min.js"></script>
+    <script>window.jQuery || document.write('<script src="../qCode/assets/js/vendor/jquery.min.js"><\/script>')</script>
+    <script src="../qCode/dist/js/bootstrap.min.js"></script>
+    <script src="../qCode/assets/js/docs.min.js"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <script src="..\\qCode\\assets\\js\\ie10-viewport-bug-workaround.js"></script>
+    <script src="../qCode/assets/js/ie10-viewport-bug-workaround.js"></script>
     </div>
   </body>
 </html>"""
@@ -402,6 +429,12 @@ def main():
             
             f.write(o)
 
-main()    
+'''main()    
 mpecconn.close()
-print('finished')
+print('finished')'''
+
+
+start = time.perf_counter()
+main()
+finish = time.perf_counter()
+print('Time: ', finish-start)
